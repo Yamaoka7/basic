@@ -1,0 +1,64 @@
+import hashlib
+import time
+
+class Block:
+    def __init__(self, index, previous_hash, timestamp, data, hash, nonce):
+        self.index = index
+        self.previous_hash = previous_hash
+        self.timestamp = timestamp
+        self.data = data
+        self.hash = hash
+        self.nonce = nonce
+
+def calculate_hash(index, previous_hash, timestamp, data, nonce):
+    value = str(index) + str(previous_hash) + str(timestamp) + str(data) + str(nonce)
+    return hashlib.sha256(value.encode()).hexdigest()
+
+def create_genesis_block():
+    return Block(0, "0", time.time(), "Genesis Block", calculate_hash(0, "0", time.time(), "Genesis Block", 0), 0)
+
+def create_new_block(previous_block, data):
+    index = previous_block.index + 1
+    timestamp = time.time()
+    nonce = 0
+    new_hash = calculate_hash(index, previous_block.hash, timestamp, data, nonce)
+
+    # Proof of Work: Find a hash with a specific pattern (e.g., starting with three zeros)
+    while not new_hash.startswith("000"):
+        nonce += 1
+        new_hash = calculate_hash(index, previous_block.hash, timestamp, data, nonce)
+
+    return Block(index, previous_block.hash, timestamp, data, new_hash, nonce)
+
+def is_valid_block(new_block, previous_block):
+    # Check if the index is incremented properly
+    if new_block.index != previous_block.index + 1:
+        return False
+
+    # Check if the previous hash matches
+    if new_block.previous_hash != previous_block.hash:
+        return False
+
+    # Check if the hash is valid
+    if new_block.hash != calculate_hash(new_block.index, new_block.previous_hash, new_block.timestamp, new_block.data, new_block.nonce):
+        return False
+
+    return True
+
+# Example Usage:
+blockchain = [create_genesis_block()]
+previous_block = blockchain[0]
+
+# Add new blocks to the blockchain
+for i in range(1, 5):
+    new_block_data = f"Block #{i}"
+    new_block = create_new_block(previous_block, new_block_data)
+
+    # Validate the new block and add it to the blockchain if valid
+    if is_valid_block(new_block, previous_block):
+        blockchain.append(new_block)
+        previous_block = new_block
+
+# Display the blockchain
+for block in blockchain:
+    print(f"Block #{block.index} - Hash: {block.hash}")
